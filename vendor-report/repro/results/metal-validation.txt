@@ -1,0 +1,9 @@
+Native Metal check (metal_texbuf_test.swift), GitHub Actions macOS runner, 2026-10-12
+device: Apple Paravirtual device, highest Apple GPU family: apple5
+macOS: Version 15.7.9 (Build 24G830)
+maxBufferLength: 3758096384
+texture buffer alignment: 16 bytes
+
+-[MTLTextureDescriptorInternal validateWithDevice:]:1405: failed assertion `Texture Descriptor Validation
+MTLTextureDescriptor has width (536854528) greater than the maximum allowed size of 268435456.
+'

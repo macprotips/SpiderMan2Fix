@@ -1,0 +1,12 @@
+LIBRARY mock_d3d12.dll
+EXPORTS
+    D3D12CreateDevice = mock_D3D12CreateDevice
+    mock_get_counts
+    mock_get_queue_counts
+    mock_get_sampler_info
+    mock_get_readback_resource
+    mock_set_d3dmetal_like
+    mock_get_last_cs_hash
+    mock_get_rb_resource
+    mock_get_last_srv
+    mock_get_last_uav

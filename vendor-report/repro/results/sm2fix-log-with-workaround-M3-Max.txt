@@ -1,0 +1,115 @@
+bottle: CrossOver / Steam
+mode: off
+mac: Apple M3 Max / macOS 27.0.1
+crossover: 
+game folder has dstorage: 2
+----
+[69497377] ========== new launch ==========
+[69497388] attach: 41 threads already in the process
+[69497389] cpu: leaf1 ecx=7ed8320f edx=0f8b8b15 (SSE4.1=1 SSE4.2=1 AVX=1 FMA=1 F16C=1 OSXSAVE=1 MOVBE=1 POPCNT=1)
+[69497389] cpu: XCR0=0000000000000007 (SSE state=1, AVX state=1, AVX-512 state=0)
+[69497389] cpu: leaf7 ebx=00000128 ecx=00000000 edx=00000000 (AVX2=1 BMI1=1 BMI2=1 AVX-512F=0)
+[69497389] cpu: leaf7.1 eax=00000000 (AVX-VNNI=0 AVX-IFMA=0)
+[69497389] cpu: ext leaf ecx=00000021 (LZCNT=1)
+[69497389] ziva: the game's CPU check says level 2 -> it uses Ziva's AVX2 code
+[69497389] sm2fix loaded: mode=off log_shaders=0 hashes=1 spoof=0 dump_compute=0 dump_graphics=0 minmax=0
+[69497389] profile=0 trace_queries=0 fake_timestamps=0
+[69497389] pool_fix=1: typed R32 buffer SRVs with more than 268435456 elements become raw views
+[69497389]   target hash 324071d329f05ccc
+[69497389] ziva: Ziva RT now runs its AVX2 CPU code
+[69497391] loading real d3d12 from C:\windows\system32\d3d12.dll -> 00006FFFE4EB0000
+[69497990] D3D12CreateDevice ok -> 00007FC3DE82B210
+[69497990] hooked Device::CreateComputePipelineState (vtbl 00006FFFE4EBB000 slot 11)
+[69497990] hooked Device::CreateCommandList (vtbl 00006FFFE4EBB000 slot 12)
+[69497990] hooked Device::CreateGraphicsPipelineState (vtbl 00006FFFE4EBB000 slot 10)
+[69497990] hooked Device::CreateRootSignature (vtbl 00006FFFE4EBB000 slot 16)
+[69497990] hooked Device::CheckFeatureSupport (vtbl 00006FFFE4EBB000 slot 13)
+[69497990] hooked Device::CreateSampler (vtbl 00006FFFE4EBB000 slot 22)
+[69497990] hooked Device::CreateCommandSignature (vtbl 00006FFFE4EBB000 slot 41)
+[69497990] hooked Device::CreateCommandQueue (vtbl 00006FFFE4EBB000 slot 8)
+[69497990] hooked Device::CreateShaderResourceView (vtbl 00006FFFE4EBB000 slot 18)
+[69497990] hooked Device::CreatePipelineState (vtbl 00006FFFE4EBB000 slot 47)
+[69497990] hooked Device::CreateCommandList1 (vtbl 00006FFFE4EBB000 slot 51)
+[69501729] D3D12CreateDevice ok -> 00007FC3DE82B210
+[69501730] CreateCommandQueue type=direct priority=0 flags=0 -> 00007FC3BA234C10
+[69501730] hooked Queue::ExecuteCommandLists (vtbl 00006FFFE4EBBD78 slot 10)
+[69501730] hooked Queue::Signal (vtbl 00006FFFE4EBBD78 slot 14)
+[69501730] hooked Queue::Wait (vtbl 00006FFFE4EBBD78 slot 15)
+[69501731] feature 1 (16 bytes) hr=0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[69501731] feature 7 (4 bytes) hr=0: 66 00 00 00 
+[69501731] feature 27 (12 bytes) hr=0: 00 00 00 00 02 00 00 00 0b 00 00 00 
+[69501731] feature 8 (24 bytes) hr=0: 01 00 00 00 20 00 00 00 20 00 00 00 00 04 00 00 01 00 00 00 01 00 00 00 
+[69501731] feature 0 (60 bytes) hr=0: 00 00 00 00 01 00 00 00 02 00 00 00 02 00 00 00 03 00 00 00 01 00 00 00 01 00 00 00 01 00 00 00 00 00 00 00 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 02 00 00 00 
+[69503665] CreateCommandQueue type=direct priority=0 flags=0 -> 00007FC3B9EA7010
+[69503665] feature 7 (4 bytes) hr=0: 66 00 00 00 
+[69506637] pipelines created so far: 1
+[69506637] pipelines created so far: 2
+[69506637] pipelines created so far: 4
+[69506637] pipelines created so far: 8
+[69506643] feature 7 (4 bytes) hr=0: 60 00 00 00 
+[69506643] feature 8 (24 bytes) hr=0: 01 00 00 00 20 00 00 00 20 00 00 00 00 04 00 00 01 00 00 00 01 00 00 00 
+[69506662] feature 46 (8 bytes) hr=0: 00 00 00 00 00 00 00 00 
+[69506662] CreateCommandQueue type=copy priority=0 flags=0 -> 00007FC3BBAB1810
+[69506662] hooked CommandList::ExecuteIndirect (vtbl 00006FFFE4EBB800 slot 59)
+[69506662] hooked CommandList::Release (vtbl 00006FFFE4EBB800 slot 2)
+[69506662] hooked CommandList::Reset (vtbl 00006FFFE4EBB800 slot 10)
+[69506662] hooked CommandList::ClearState (vtbl 00006FFFE4EBB800 slot 11)
+[69506662] hooked CommandList::SetPipelineState (vtbl 00006FFFE4EBB800 slot 25)
+[69506662] hooked CommandList::Dispatch (vtbl 00006FFFE4EBB800 slot 14)
+[69506664] feature 7 (4 bytes) hr=0: 65 00 00 00 
+[69506664] feature 8 (24 bytes) hr=0: 01 00 00 00 20 00 00 00 20 00 00 00 00 04 00 00 01 00 00 00 01 00 00 00 
+[69506664] feature 23 (12 bytes) hr=0: 01 00 00 00 02 00 00 00 01 00 00 00 
+[69506669] feature 16 (20 bytes) hr=0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+[69506669] feature 0 (60 bytes) hr=0: 00 00 00 00 01 00 00 00 02 00 00 00 02 00 00 00 03 00 00 00 01 00 00 00 01 00 00 00 01 00 00 00 00 00 00 00 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 02 00 00 00 
+[69506674] CreateCommandSignature stride=16 args=[ 0 ] hr=0
+[69506674] CreateCommandSignature stride=20 args=[ 1 ] hr=0
+[69506674] CreateCommandSignature stride=12 args=[ 2 ] hr=0
+[69506674] feature 27 (12 bytes) hr=0: 00 00 00 00 02 00 00 00 0b 00 00 00 
+[69506712] feature 0 (60 bytes) hr=0: 00 00 00 00 01 00 00 00 02 00 00 00 02 00 00 00 03 00 00 00 01 00 00 00 01 00 00 00 01 00 00 00 00 00 00 00 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 02 00 00 00 
+[69506737] CreateCommandQueue type=copy priority=0 flags=0 -> 00007FC3BBA55410
+[69506738] CreateCommandQueue type=compute priority=0 flags=0 -> 00007FC3BA26B810
+[69506760] feature 3 (12 bytes) hr=0: 14 00 00 00 ff 15 e5 05 40 00 00 00 
+[69506760] pool_fix: typed SRV #1 (format 42, first 0, 536346624 elements, res 00007FC3EF117D40) -> raw view
+[69506775] pipelines created so far: 16
+[69506782] pipelines created so far: 32
+[69506782] pipelines created so far: 64
+[69506794] pipelines created so far: 128
+[69506810] pipelines created so far: 256
+[69506843] pool_fix: loaded sm2fix-pool-14902794dd7134e4.dxil (8628 bytes)
+[69506845] pool_fix: loaded sm2fix-pool-3d50acdb571dce22.dxil (132032 bytes)
+[69506860] pipelines created so far: 512
+[69507007] pool_fix: replaced compute shader 14902794dd7134e4 (CreateComputePipelineState): hr=0 pso=00006000033594E0
+[69507425] pool_fix: replaced compute shader 3d50acdb571dce22 (CreateComputePipelineState): hr=0 pso=000060000337D060
+[69507426] skinning shader created via CreateComputePipelineState -> pso 000060000337D060
+[69507844] feature 0 (60 bytes) hr=0: 00 00 00 00 01 00 00 00 02 00 00 00 02 00 00 00 03 00 00 00 01 00 00 00 01 00 00 00 01 00 00 00 00 00 00 00 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 02 00 00 00 
+[69507844] feature 8 (24 bytes) hr=0: 01 00 00 00 20 00 00 00 20 00 00 00 00 04 00 00 01 00 00 00 01 00 00 00 
+[69507844] feature 18 (8 bytes) hr=0: 01 00 00 00 01 00 00 00 
+[69507844] feature 21 (20 bytes) hr=0: 00 00 00 00 01 00 00 00 0d 00 00 00 02 00 00 00 01 00 00 00 
+[69507844] feature 23 (12 bytes) hr=0: 01 00 00 00 02 00 00 00 01 00 00 00 
+[69507844] feature 27 (12 bytes) hr=0: 00 00 00 00 02 00 00 00 0b 00 00 00 
+[69507844] feature 30 (20 bytes) hr=0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 
+[69507844] feature 32 (8 bytes) hr=0: 0a 00 00 00 00 00 00 00 
+[69507844] feature 2 (24 bytes) hr=0: 05 00 00 00 00 00 00 00 88 d8 10 00 00 00 00 00 00 c2 00 00 00 00 00 00 
+[69507844] CreateCommandSignature stride=12 args=[ 2 ] hr=0
+[69507844] CreateCommandSignature stride=104 args=[ 9 ] hr=0
+[69507865] feature 27 (12 bytes) hr=0: 00 00 00 00 02 00 00 00 0b 00 00 00 
+[69507868] feature 2 (24 bytes) hr=0: 04 00 00 00 01 00 00 00 88 fb 91 13 01 00 00 00 00 b0 00 00 00 00 00 00 
+[69507915] feature 23 (12 bytes) hr=0: 01 00 00 00 02 00 00 00 01 00 00 00 
+[69507915] feature 23 (12 bytes) hr=0: 01 00 00 00 02 00 00 00 01 00 00 00 
+[69509506] pipelines created so far: 1024
+[69510013] pipelines created so far: 2048
+[69533911] pipelines created so far: 4096
+[69537389] CreateCommandQueue type=copy priority=0 flags=0 -> 00007FC36B9E8E10
+[69577165] feature 18 (8 bytes) hr=0: 01 00 00 00 01 00 00 00 
+[69577165] feature 21 (20 bytes) hr=0: 00 00 00 00 01 00 00 00 0d 00 00 00 02 00 00 00 01 00 00 00 
+[69577165] feature 30 (20 bytes) hr=0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 
+[69577165] feature 32 (8 bytes) hr=0: 0a 00 00 00 00 00 00 00 
+[69577165] feature 2 (24 bytes) hr=0: 05 00 00 00 00 00 00 00 88 d8 10 00 00 00 00 00 00 c2 00 00 00 00 00 00 
+[69577170] CreateCommandSignature stride=12 args=[ 2 ] hr=0
+[69577170] CreateCommandSignature stride=104 args=[ 9 ] hr=0
+exit: pool_fix: 2 shader pipelines replaced, 1 typed views made raw
+exit: 0 forced barriers, 0 target PSOs
+exit: root signatures=58 with min/max static samplers=0; heap samplers=1910 min/max=0
+exit: timestamp resolves faked=0 passed-through=0
+exit: dispatches=801044 execute_indirect=80497 pso_failures=0
+exit: submits direct=77865 compute=8385 copy=5984; fence signals=168199 waits=14337; serialize waits=0 timeouts=0

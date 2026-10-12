@@ -1,0 +1,77 @@
+name: sm2fix-app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 180
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      # Microsoft's shader tools, built once per pinned DXC commit and cached.
+      - name: Restore DXC tools
+        id: dxc-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: app/.dxc
+          key: dxc-macos-arm64-${{ hashFiles('app/build-dxc.sh') }}
+
+      - name: Build DXC tools
+        if: steps.dxc-cache.outputs.cache-hit != 'true'
+        run: |
+          brew install ninja >/dev/null || true
+          ./build-dxc.sh
+
+      - name: Save DXC tools
+        if: steps.dxc-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: app/.dxc
+          key: dxc-macos-arm64-${{ hashFiles('app/build-dxc.sh') }}
+
+      - name: Test
+        run: SM2FIX_DXC="$PWD/.dxc/bin" swift test
+
+      - name: Build app
+        run: VERSION=1.0.${{ github.run_number }} BUILD_NUMBER=${{ github.run_number }} ./build-app.sh
+
+      - name: Smoke test the built app
+        run: |
+          APP="build/Spider-Man 2 T-Pose Fix.app"
+          "$APP/Contents/MacOS/SM2Fix" --selftest
+          lipo -archs "$APP/Contents/MacOS/SM2Fix"
+          codesign -dv "$APP" 2>&1 | head -5
+          # unzip what users download and check it again
+          mkdir -p /tmp/unzipped && ditto -x -k build/Spider-Man-2-T-Pose-Fix.zip /tmp/unzipped
+          "/tmp/unzipped/Spider-Man 2 T-Pose Fix.app/Contents/MacOS/SM2Fix" --selftest
+
+      - name: Native Metal texture-buffer check
+        continue-on-error: true   # the runner's GPU may be virtual
+        run: |
+          swiftc -O ../vendor-report/repro/metal_texbuf_test.swift -o /tmp/metal_texbuf_test
+          /tmp/metal_texbuf_test
+
+      # Checks every window state renders (the README shows images/app.png).
+      - name: Render screenshots
+        run: |
+          rm -rf screenshots
+          "build/Spider-Man 2 T-Pose Fix.app/Contents/MacOS/SM2Fix" --snapshots screenshots
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Spider-Man-2-T-Pose-Fix
+          path: app/build/Spider-Man-2-T-Pose-Fix.zip
+
+      # The script a developer runs on their own Mac (uses the cached DXC tools here).
+      - name: Local setup script
+        run: ./dev-setup.sh --no-open

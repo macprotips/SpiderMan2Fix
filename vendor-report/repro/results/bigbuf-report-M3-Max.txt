@@ -1,0 +1,45 @@
+mac: Apple M3 Max / macOS 27.0.1
+bottle: CrossOver / Steam
+Big-buffer check: one 2.00 GB buffer read at large element indices
+
+element      expected    R32_UINT    RGBA32_UINT  structured  raw       
+0            5bd1e995    5bd1e995    5bd1e995     5bd1e995     5bd1e995 
+1            c5e69024    c5e69024    c5e69024     c5e69024     c5e69024 
+12345        fafaa1fc    fafaa1fc    fafaa1fc     fafaa1fc     fafaa1fc 
+1048575      a7096fda    a7096fda    a7096fda     a7096fda     a7096fda 
+1048576      c0c1e995    c0c1e995    c0c1e995     c0c1e995     c0c1e995 
+1048580      483c0f51    483c0f51    483c0f51     483c0f51     483c0f51 
+2097151      cc396fda    cc396fda    cc396fda     cc396fda     cc396fda 
+2097152      6df1e995    6df1e995    6df1e995     6df1e995     6df1e995 
+2097156      f52c0f51    f52c0f51    f52c0f51     f52c0f51     f52c0f51 
+4194303      95d96fda    95d96fda    95d96fda     95d96fda     95d96fda 
+4194304      3791e995    3791e995    3791e995     3791e995     3791e995 
+4194308      becc0f51    becc0f51    becc0f51     becc0f51     becc0f51 
+8388607      61996fda    61996fda    61996fda     61996fda     61996fda 
+8388608      8351e995    8351e995    8351e995     8351e995     8351e995 
+8388612      0a8c0f51    0a8c0f51    0a8c0f51     0a8c0f51     0a8c0f51 
+16777215     49196fda    49196fda    49196fda     49196fda     49196fda 
+16777216     ead1e995    ead1e995    ead1e995     ead1e995     ead1e995 
+16777220     720c0f51    720c0f51    720c0f51     720c0f51     720c0f51 
+33554431     98196fda    98196fda    98196fda     98196fda     98196fda 
+33554432     39d1e995    39d1e995    39d1e995     39d1e995     39d1e995 
+33554436     810c0f51    810c0f51    810c0f51     810c0f51     810c0f51 
+67108863     7e196fda    7e196fda    7e196fda     7e196fda     7e196fda 
+67108864     9fd1e995    9fd1e995    9fd1e995     9fd1e995     9fd1e995 
+67108868     670c0f51    670c0f51    670c0f51     670c0f51     670c0f51 
+134217727    b2196fda    b2196fda    b2196fda     b2196fda     b2196fda 
+134217728    d3d1e995    d3d1e995    d3d1e995     d3d1e995     d3d1e995 
+134217732    5b0c0f51    5b0c0f51    5b0c0f51     5b0c0f51     5b0c0f51 
+268435455    2a196fda    2a196fda    2a196fda     2a196fda     2a196fda 
+268435456    4bd1e995    00000000*   4bd1e995     4bd1e995     4bd1e995 
+268435460    d30c0f51    00000000*   d30c0f51     d30c0f51     d30c0f51 
+402653184    c3d1e995    00000000*   c3d1e995     c3d1e995     c3d1e995 
+335544320    8fd1e995    00000000*   8fd1e995     8fd1e995     8fd1e995 
+536854520    14061bed    00000000*   14061bed     14061bed     14061bed 
+536854527    f88dafda    00000000*   f88dafda     f88dafda     f88dafda 
+
+typed R32_UINT           WRONG at 6 probe(s), first at element 268435456 (= 2^28.00)
+typed R32G32B32A32_UINT  ok
+structured               ok
+raw                      ok
+RESULT: SOME VIEWS READ WRONG DATA AT LARGE INDICES

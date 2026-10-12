@@ -1,0 +1,10 @@
+.DS_Store
+.build/
+.swiftpm/
+DerivedData/
+__pycache__/
+build/
+build-logs/
+.dxc/
+.dxc-build/
+app/screenshots/

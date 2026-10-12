@@ -1,0 +1,10 @@
+LIBRARY d3d12.dll
+EXPORTS
+    D3D12CreateDevice = fix_D3D12CreateDevice
+    D3D12GetDebugInterface = fix_D3D12GetDebugInterface
+    D3D12SerializeRootSignature = fix_D3D12SerializeRootSignature
+    D3D12SerializeVersionedRootSignature = fix_D3D12SerializeVersionedRootSignature
+    D3D12CreateRootSignatureDeserializer = fix_D3D12CreateRootSignatureDeserializer
+    D3D12CreateVersionedRootSignatureDeserializer = fix_D3D12CreateVersionedRootSignatureDeserializer
+    D3D12EnableExperimentalFeatures = fix_D3D12EnableExperimentalFeatures
+    D3D12GetInterface = fix_D3D12GetInterface
