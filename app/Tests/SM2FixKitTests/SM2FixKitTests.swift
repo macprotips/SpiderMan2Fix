@@ -33,6 +33,43 @@ final class BottleTests: XCTestCase {
         XCTAssertTrue(bottles[1].hasSteam)
     }
 
+    func testFindsBottlesInCrossOversBottlePath() throws {
+        let mac = try FakeMac()
+        try mac.bottle("Steam")
+        let custom = try mac.bottle("Spider-Man", base: "CXPBottles")
+        try #"""
+        ;;"BottlePath" = ""
+        "BottlePath" = "${HOME}/CXPBottles:/nowhere"
+        """#.write(to: mac.home.appendingPathComponent("Library/Application Support/CrossOver/CrossOver.conf"),
+                   atomically: true, encoding: .utf8)
+        XCTAssertEqual(Bottles.all(in: mac.env).map(\.name), ["Spider-Man", "Steam"])
+        let game = try mac.game(in: custom.appendingPathComponent("drive_c/Program Files (x86)/Steam"))
+        XCTAssertEqual(GameFinder.findAll(env: mac.env).first?.bottle?.name, "Spider-Man")
+        XCTAssertEqual(GameFinder.install(at: game, env: mac.env).reason, .insideBottle)
+    }
+
+    func testFindsBottlesInTheFolderChosenInCrossOver() throws {
+        let mac = try FakeMac()
+        try mac.bottle("Steam")
+        try mac.bottle("Spider-Man", base: "Games/Bottles")
+        let prefs = mac.home.appendingPathComponent("Library/Preferences")
+        try mac.fm.createDirectory(at: prefs, withIntermediateDirectories: true)
+        try PropertyListSerialization.data(fromPropertyList: ["BottleDir": "~/Games/Bottles"], format: .binary, options: 0)
+            .write(to: prefs.appendingPathComponent("com.codeweavers.CrossOver.plist"))
+        XCTAssertEqual(Bottles.all(in: mac.env).map(\.name), ["Spider-Man", "Steam"])
+    }
+
+    func testGameInsideAnUnlistedBottleUsesThatBottle() throws {
+        let mac = try FakeMac()
+        try mac.bottle("Steam")
+        let other = try mac.bottle("Elsewhere", base: "Somewhere")
+        let game = try mac.game(in: other.appendingPathComponent("drive_c/Games"))
+        let install = GameFinder.install(at: game, env: mac.env)
+        XCTAssertEqual(install.bottle?.name, "Elsewhere")
+        XCTAssertEqual(install.reason, .insideBottle)
+        XCTAssertEqual(install.candidates.map(\.name), ["Steam", "Elsewhere"])
+    }
+
     func testDriveLettersMapToMacFolders() throws {
         let mac = try FakeMac()
         let bottle = try mac.bottle("Steam")

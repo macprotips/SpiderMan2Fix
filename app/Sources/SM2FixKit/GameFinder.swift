@@ -70,7 +70,10 @@ public enum GameFinder {
 
     /// The install for a game folder: which bottle runs it.
     public static func install(at folder: URL, env: SystemEnvironment) -> GameInstall {
-        let bottles = Bottles.all(in: env)
+        var bottles = Bottles.all(in: env)
+        if let own = Bottles.enclosing(folder), !bottles.contains(where: { folder.isInside($0.path) }) {
+            bottles.append(own)
+        }
         let found = Bottles.bottle(for: folder, among: bottles)
         return GameInstall(folder: folder, bottle: found.bottle, reason: found.reason, candidates: bottles)
     }

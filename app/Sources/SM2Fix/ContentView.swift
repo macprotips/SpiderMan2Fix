@@ -198,21 +198,27 @@ struct GameCard: View {
     private var bottleRow: some View {
         CardRow(label: "Bottle") {
             if model.bottles.isEmpty {
-                Text("No CrossOver bottles found")
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Text("No CrossOver bottles found")
+                        .foregroundStyle(.secondary)
+                    refreshButton
+                }
             } else {
                 VStack(alignment: .leading, spacing: 4) {
-                    Picker("Bottle", selection: Binding(get: { model.bottleID }, set: { model.choose(bottleID: $0) })) {
-                        if model.bottleID == nil {
-                            Text("Choose…").tag(String?.none)
+                    HStack(spacing: 6) {
+                        Picker("Bottle", selection: Binding(get: { model.bottleID }, set: { model.choose(bottleID: $0) })) {
+                            if model.bottleID == nil {
+                                Text("Choose…").tag(String?.none)
+                            }
+                            ForEach(model.bottles) { bottle in
+                                Text("\(bottle.name) (\(bottle.kind.rawValue))").tag(Optional(bottle.id))
+                            }
                         }
-                        ForEach(model.bottles) { bottle in
-                            Text("\(bottle.name) (\(bottle.kind.rawValue))").tag(Optional(bottle.id))
-                        }
+                        .labelsHidden()
+                        .fixedSize()
+                        .disabled(model.busy)
+                        refreshButton
                     }
-                    .labelsHidden()
-                    .fixedSize()
-                    .disabled(model.busy)
                     if model.selectedBottle == nil {
                         Label("Choose the bottle you run Steam in.", systemImage: "exclamationmark.circle.fill")
                             .font(.system(size: 11))
@@ -225,6 +231,18 @@ struct GameCard: View {
                 }
             }
         }
+    }
+
+    private var refreshButton: some View {
+        Button {
+            model.refreshBottles()
+        } label: {
+            Image(systemName: "arrow.clockwise")
+        }
+        .buttonStyle(.borderless)
+        .disabled(model.busy)
+        .help("Look for bottles again")
+        .accessibilityLabel("Look for bottles again")
     }
 
     private var statusRow: some View {

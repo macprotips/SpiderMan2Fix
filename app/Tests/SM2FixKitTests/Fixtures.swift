@@ -46,8 +46,8 @@ final class FakeMac {
     }
 
     @discardableResult
-    func bottle(_ name: String, steam: Bool = true, userReg: String = "WINE REGISTRY Version 2\n") throws -> URL {
-        let base = "Library/Application Support/CrossOver/Bottles"
+    func bottle(_ name: String, steam: Bool = true, userReg: String = "WINE REGISTRY Version 2\n",
+                base: String = "Library/Application Support/CrossOver/Bottles") throws -> URL {
         let bottle = home.appendingPathComponent(base).appendingPathComponent(name)
         try fm.createDirectory(at: bottle.appendingPathComponent("drive_c/windows/system32"), withIntermediateDirectories: true)
         try fm.createDirectory(at: bottle.appendingPathComponent("dosdevices"), withIntermediateDirectories: true)

@@ -107,16 +107,67 @@ public enum BottleReason: String, Equatable {
 }
 
 public enum Bottles {
-    /// Every CrossOver bottle in the user's home folder.
+    /// Every CrossOver bottle, in the folders CrossOver keeps them in.
     public static func all(in env: SystemEnvironment) -> [Bottle] {
-        let root = env.home.appendingPathComponent("Library/Application Support/CrossOver/Bottles")
         let fm = FileManager.default
-        let entries = (try? fm.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []
-        return entries.sorted { $0.lastPathComponent.lowercased() < $1.lastPathComponent.lowercased() }.compactMap { entry in
-            var isDir: ObjCBool = false
-            guard fm.fileExists(atPath: entry.appendingPathComponent("drive_c").path, isDirectory: &isDir), isDir.boolValue else { return nil }
-            return Bottle(kind: .crossOver, name: entry.lastPathComponent, path: entry)
+        var bottles: [Bottle] = []
+        for root in folders(in: env) {
+            let entries = (try? fm.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []
+            for entry in entries.sorted(by: { $0.lastPathComponent.lowercased() < $1.lastPathComponent.lowercased() })
+            where isBottle(entry) && !bottles.contains(where: { $0.path.canonicalPath == entry.canonicalPath }) {
+                bottles.append(Bottle(kind: .crossOver, name: entry.lastPathComponent, path: entry))
+            }
         }
+        return bottles
+    }
+
+    /// The folders CrossOver keeps bottles in: the one chosen in CrossOver's settings
+    /// ("Choose a Bottles Folder", saved as `BottleDir`), those in `BottlePath` in
+    /// CrossOver.conf (a colon-separated list that can use ${HOME} or ~), then the default.
+    static func folders(in env: SystemEnvironment) -> [URL] {
+        let support = env.home.appendingPathComponent("Library/Application Support/CrossOver")
+        var folders: [URL] = []
+        func add(_ path: Substring) {
+            let path = path.hasPrefix("~/") ? env.home.path + path.dropFirst(1) : String(path)
+            if path.hasPrefix("/") { folders.append(URL(fileURLWithPath: path)) }
+        }
+        let prefs = env.home.appendingPathComponent("Library/Preferences/com.codeweavers.CrossOver.plist")
+        if let data = try? Data(contentsOf: prefs),
+           let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+           let dir = plist["BottleDir"] as? String {
+            add(dir.hasPrefix("file://") ? Substring(URL(string: dir)?.path ?? "") : Substring(dir))
+        }
+        let conf = (try? String(contentsOf: support.appendingPathComponent("CrossOver.conf"), encoding: .utf8)) ?? ""
+        for line in conf.split(whereSeparator: \.isNewline) {
+            let parts = line.split(separator: "=", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
+            guard parts.count == 2, parts[0] == "\"BottlePath\"", parts[1].count >= 2,
+                  parts[1].hasPrefix("\""), parts[1].hasSuffix("\"") else { continue }
+            let value = parts[1].dropFirst().dropLast()
+                .replacingOccurrences(of: "${HOME}", with: env.home.path)
+                .replacingOccurrences(of: "$HOME", with: env.home.path)
+            value.split(separator: ":").forEach(add)
+        }
+        return folders + [support.appendingPathComponent("Bottles")]
+    }
+
+    /// The bottle a folder is inside (the part of its path before `drive_c`), wherever
+    /// that bottle is kept.
+    public static func enclosing(_ folder: URL) -> Bottle? {
+        var dir = folder.resolvingSymlinksInPath().standardizedFileURL
+        while dir.path != "/" {
+            if dir.lastPathComponent == "drive_c" {
+                let bottle = dir.deletingLastPathComponent()
+                return isBottle(bottle) ? Bottle(kind: .crossOver, name: bottle.lastPathComponent, path: bottle) : nil
+            }
+            dir = dir.deletingLastPathComponent()
+        }
+        return nil
+    }
+
+    static func isBottle(_ folder: URL) -> Bool {
+        var isDir: ObjCBool = false
+        return FileManager.default.fileExists(atPath: folder.appendingPathComponent("drive_c").path, isDirectory: &isDir)
+            && isDir.boolValue
     }
 
     /// Which bottle runs the game in `gameFolder`, and why. Each test narrows the bottles

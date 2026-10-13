@@ -112,6 +112,11 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Looks at the bottles again, after adding one or moving CrossOver's bottles folder.
+    func refreshBottles() {
+        if let game { open(game.folder) }
+    }
+
     func chooseFolder() {
         let panel = NSOpenPanel()
         panel.title = "Choose the Marvel's Spider-Man 2 Folder"
