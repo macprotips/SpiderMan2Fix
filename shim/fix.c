@@ -29,9 +29,12 @@
 
 #include "sm2fix_core.h"
 
-#define FIX_VERSION "1.0"
+#define FIX_VERSION "1.0.2"
 #define WIDE_VIEW (1u << 28)          /* D3DMetal's typed buffer limit on M1-M4 */
 #define MAX_SHADERS 8
+/* Entries copied when the device's vtable has to be replaced by a writable copy: all of
+ * ID3D12Device10 plus room for the methods later SDKs added (ID3D12Device11-14). */
+#define VTBL_COPY_ENTRIES (sizeof(ID3D12Device10Vtbl) / sizeof(void *) + 16)
 #define DEV_IDX(m) (offsetof(ID3D12Device2Vtbl, m) / sizeof(void *))
 
 static HMODULE g_self, g_real;
@@ -392,6 +395,43 @@ static void STDMETHODCALLTYPE hk_CreateUnorderedAccessView(ID3D12Device *device,
     orig(device, resource, counter, desc, handle);
 }
 
+/* With CrossOver 26 (seen with 26.2), D3DMetal keeps the device's vtable in macOS memory that
+ * Wine doesn't manage: VirtualProtect on it fails with ERROR_INVALID_PARAMETER, so the vtable
+ * can't be patched in place and none of the hooks below would be installed. In that case the
+ * device object gets a writable copy of its vtable, and the hooks patch the copy. Every
+ * ID3D12DeviceN the device hands out is the same object, so this one pointer covers them all. */
+static void use_writable_vtable(IUnknown *device)
+{
+    void **vtbl = *(void ***)device, **copy;
+    DWORD old, error;
+    unsigned int i;
+
+    if (VirtualProtect(&vtbl[0], sizeof(void *), PAGE_READWRITE, &old))
+    {
+        VirtualProtect(&vtbl[0], sizeof(void *), old, &old);
+        return;
+    }
+    error = GetLastError();
+    AcquireSRWLockShared(&g_lock);
+    for (i = 0; i < g_hook_count; i++)
+    {
+        if (g_hooks[i].vtbl == vtbl)
+        {
+            ReleaseSRWLockShared(&g_lock);
+            return;
+        }
+    }
+    ReleaseSRWLockShared(&g_lock);
+    if (!(copy = VirtualAlloc(NULL, VTBL_COPY_ENTRIES * sizeof(void *), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)))
+    {
+        log_msg("ERROR: the device's vtable can't be patched (error %lu) or copied (error %lu)", error, GetLastError());
+        return;
+    }
+    memcpy(copy, vtbl, VTBL_COPY_ENTRIES * sizeof(void *));
+    InterlockedExchangePointer((void **)device, copy);
+    log_msg("The device's vtable can't be patched in place (error %lu): using a writable copy", error);
+}
+
 static void hook_device(IUnknown *device)
 {
     static const struct { const IID *iid; int has_stream; } ifaces[] =
@@ -402,6 +442,7 @@ static void hook_device(IUnknown *device)
     };
     unsigned int i;
 
+    use_writable_vtable(device);
     for (i = 0; i < ARRAYSIZE(ifaces); i++)
     {
         IUnknown *iface = NULL;
