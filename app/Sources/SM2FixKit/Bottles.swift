@@ -1,9 +1,13 @@
 import Foundation
 
-/// A CrossOver bottle on this Mac.
+/// A Wine prefix on this Mac that can run the game: a CrossOver bottle or a GameHub container.
 public struct Bottle: Hashable, Identifiable {
     public enum Kind: String {
         case crossOver = "CrossOver"
+        case gameHub = "GameHub"
+
+        /// What the app calls its Wine prefixes.
+        public var noun: String { self == .gameHub ? "container" : "bottle" }
     }
 
     public let kind: Kind
@@ -17,7 +21,7 @@ public struct Bottle: Hashable, Identifiable {
     }
 
     public var id: String { path.path }
-    public var displayName: String { "\(kind.rawValue) bottle “\(name)”" }
+    public var displayName: String { "\(kind.rawValue) \(kind.noun) “\(name)”" }
     public var userReg: URL { path.appendingPathComponent("user.reg") }
 
     /// Whether Steam is installed inside this bottle.
@@ -74,6 +78,16 @@ public struct Bottle: Hashable, Identifiable {
             }
     }
 
+    /// Whether this bottle's Steam has a link to `gameFolder` in its own library (GameHub
+    /// keeps its games outside the container and links each one into the container's Steam).
+    public func linksGame(_ gameFolder: URL) -> Bool {
+        Self.steamFolders.contains { steam in
+            let link = path.appendingPathComponent("drive_c/\(steam)/\(GameFinder.commonSubpath)")
+            return (try? FileManager.default.destinationOfSymbolicLink(atPath: link.path)) != nil
+                && link.canonicalPath == gameFolder.canonicalPath
+        }
+    }
+
     /// Whether Spider-Man 2 has per-game Wine settings in this bottle (the fix, or the
     /// troubleshooting menu, set them up here before).
     public var hasGameSettings: Bool {
@@ -99,6 +113,7 @@ public struct Bottle: Hashable, Identifiable {
 /// Why a bottle was picked for the game.
 public enum BottleReason: String, Equatable {
     case insideBottle = "The game is inside this bottle."
+    case linkedInBottle = "This bottle's Steam links to the game."
     case steamLibrary = "This bottle's Steam has the game's library."
     case gameSettings = "The game was set up in this bottle before."
     case driveLetter = "This bottle has a drive letter for the game's disk."
@@ -107,18 +122,24 @@ public enum BottleReason: String, Equatable {
 }
 
 public enum Bottles {
-    /// Every CrossOver bottle, in the folders CrossOver keeps them in.
+    /// Every CrossOver bottle, in the folders CrossOver keeps them in, then every GameHub container.
     public static func all(in env: SystemEnvironment) -> [Bottle] {
         let fm = FileManager.default
         var bottles: [Bottle] = []
-        for root in folders(in: env) {
+        let roots = folders(in: env).map { ($0, Bottle.Kind.crossOver) } + [(gameHubFolder(in: env), .gameHub)]
+        for (root, kind) in roots {
             let entries = (try? fm.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []
             for entry in entries.sorted(by: { $0.lastPathComponent.lowercased() < $1.lastPathComponent.lowercased() })
             where isBottle(entry) && !bottles.contains(where: { $0.path.canonicalPath == entry.canonicalPath }) {
-                bottles.append(Bottle(kind: .crossOver, name: entry.lastPathComponent, path: entry))
+                bottles.append(Bottle(kind: kind, name: entry.lastPathComponent, path: entry))
             }
         }
         return bottles
+    }
+
+    /// Where GameHub keeps the Wine containers its games run in (one per game, named by number).
+    static func gameHubFolder(in env: SystemEnvironment) -> URL {
+        env.home.appendingPathComponent("Library/Application Support/com.gamemac.www/wine-engine/containers/virtual_containers")
     }
 
     /// The folders CrossOver keeps bottles in: the one chosen in CrossOver's settings
@@ -172,7 +193,8 @@ public enum Bottles {
 
     /// Which bottle runs the game in `gameFolder`, and why. Each test narrows the bottles
     /// down; the first that leaves exactly one decides:
-    /// the bottle the game is inside; bottles whose Steam lists the game's library; bottles
+    /// the bottle the game is inside; bottles whose Steam links to the game's folder;
+    /// bottles whose Steam lists the game's library; bottles
     /// where the game has Wine settings already; bottles with a drive letter for the
     /// game's disk; bottles with Steam installed.
     public static func bottle(for gameFolder: URL, among bottles: [Bottle]) -> (bottle: Bottle?, reason: BottleReason?) {
@@ -181,6 +203,7 @@ public enum Bottles {
         }
         var pool = bottles
         let tests: [(BottleReason, (Bottle) -> Bool)] = [
+            (.linkedInBottle, { $0.linksGame(gameFolder) }),
             (.steamLibrary, { $0.steamLibraries().contains { gameFolder.isInside($0) } }),
             (.gameSettings, { $0.hasGameSettings }),
             (.driveLetter, { $0.mappedDrives().contains { gameFolder.isInside($0) } }),

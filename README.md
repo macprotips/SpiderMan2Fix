@@ -2,7 +2,7 @@
 
 Fixes characters stuck in a T-pose, and the symbiote drawn as spikes or a flat black sheet
 (or missing), in Marvel's Spider-Man 2 on Macs with an M1, M2, M3 or M4 chip, played through
-CrossOver.
+CrossOver or GameHub.
 
 | Without the fix | With the fix |
 | --- | --- |
@@ -24,6 +24,10 @@ CrossOver.
    an external drive; otherwise drag the **Marvel's Spider-Man 2** folder (the one with
    `Spider-Man2.exe`) into its window.
 4. Click **Apply Fix**, then start the game from CrossOver as usual.
+
+**GameHub:** the same steps work. Quit the game and GameHub (instead of Steam and CrossOver);
+the app finds the game in GameHub's library and the container GameHub runs it in, then start the
+game from GameHub as usual.
 
 **Remove Fix** in the same window puts everything back. If the game updates, the fix
 pauses itself until you open the app and click **Update Fix**. Quit Steam and CrossOver
@@ -50,6 +54,16 @@ one Wine setting in the bottle (`d3d12 = native,builtin` for Spider-Man2.exe). T
 are built on your Mac from your own copy of the game and checked against the verified
 versions, so no game files are included here. The game and CrossOver themselves aren't
 changed, and the DLL does nothing unless it finds the exact game version it was set up for.
+
+Under GameHub two more things are needed, and the DLL handles both:
+
+- GameHub reports an NVIDIA GPU to the game, so the game creates its device through NVIDIA
+  Streamline (`sl.interposer.dll`), which loads the system d3d12.dll itself and never calls the
+  fix's. D3DMetal's `D3D12CreateDevice` is a jump through a pointer table in its own DLL; the fix
+  redirects that pointer, so it sees every device whoever creates it.
+- GameHub's D3DMetal keeps its device vtables in its native macOS library, outside the memory
+  Wine manages, so they can't be patched in place (`VirtualProtect` fails). The fix gives such a
+  device a writable copy of its vtable with the hooks in it.
 
 A report for Apple, with a standalone repro, is in [`vendor-report/`](vendor-report/).
 

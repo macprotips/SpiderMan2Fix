@@ -195,7 +195,8 @@ final class AppModel: ObservableObject {
         case .failure(InstallError.gameRunning):
             return Banner(kind: .warning, title: "Quit Spider-Man 2 first", detail: InstallError.gameRunning.localizedDescription)
         case .failure(InstallError.quitCrossOver):
-            return Banner(kind: .warning, title: "Quit Steam and CrossOver", detail: InstallError.quitCrossOver.localizedDescription)
+            return Banner(kind: .warning, title: "Quit Steam and \(bottle?.kind.rawValue ?? "CrossOver")",
+                          detail: InstallError.quitCrossOver.localizedDescription)
         case .failure(let error):
             return Banner(kind: .error, title: removing ? "Couldn't remove the fix." : "Couldn't apply the fix.",
                           detail: error.localizedDescription)
@@ -203,7 +204,10 @@ final class AppModel: ObservableObject {
             report = r
         }
         var notes = report.notes
-        let manual = "In CrossOver, select the bottle, open Wine Configuration › Libraries, add d3d12 and set it to “Native then Builtin”."
+        let app = bottle?.kind.rawValue ?? "CrossOver"
+        let manual = bottle?.kind == .gameHub
+            ? "In the container's user.reg, add \"d3d12\"=\"native,builtin\" under [Software\\\\Wine\\\\AppDefaults\\\\\(GameFinder.exeName)\\\\DllOverrides]."
+            : "In CrossOver, select the bottle, open Wine Configuration › Libraries, add d3d12 and set it to “Native then Builtin”."
         if removing {
             return Banner(kind: .success, title: "The fix was removed.",
                           detail: (["The game is back to how it was."] + notes).joined(separator: " "))
@@ -213,13 +217,13 @@ final class AppModel: ObservableObject {
             notes.insert("The fix is in the game folder, but Wine couldn't be set to load it (\(reason)). Do it once by hand: \(manual)", at: 0)
             return Banner(kind: .warning, title: "One more step", detail: notes.joined(separator: " "))
         case .wineRunning?:
-            notes.insert("Quit CrossOver, then click Apply Fix again.", at: 0)
+            notes.insert("Quit \(app), then click Apply Fix again.", at: 0)
             return Banner(kind: .warning, title: "One more step", detail: notes.joined(separator: " "))
         case nil:
-            notes.insert("No CrossOver bottle was found, so Wine wasn't set to load it. If the fix doesn't take effect: \(manual)", at: 0)
+            notes.insert("No CrossOver bottle or GameHub container was found, so Wine wasn't set to load it. If the fix doesn't take effect: \(manual)", at: 0)
             return Banner(kind: .warning, title: "The fix was copied", detail: notes.joined(separator: " "))
         default:
-            notes.insert("Start Spider-Man 2 from CrossOver as usual.", at: 0)
+            notes.insert("Start Spider-Man 2 from \(app) as usual.", at: 0)
             return Banner(kind: .success, title: "The fix is applied.", detail: notes.joined(separator: " "))
         }
     }

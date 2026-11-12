@@ -32,18 +32,22 @@
 #define FIX_VERSION "1.0"
 #define WIDE_VIEW (1u << 28)          /* D3DMetal's typed buffer limit on M1-M4 */
 #define MAX_SHADERS 8
+#define VTBL_SLOTS 128                /* covers ID3D12Device up to ID3D12Device14 */
 #define DEV_IDX(m) (offsetof(ID3D12Device2Vtbl, m) / sizeof(void *))
 
 static HMODULE g_self, g_real;
 static FILE *g_log;
 static SRWLOCK g_lock = SRWLOCK_INIT;
-static INIT_ONCE g_init = INIT_ONCE_STATIC_INIT;
+static INIT_ONCE g_init = INIT_ONCE_STATIC_INIT, g_patch = INIT_ONCE_STATIC_INIT;
 static BOOL g_active;
 static struct { uint64_t hash; void *data; size_t size; } g_shaders[MAX_SHADERS];
 static unsigned int g_shader_count;
-static volatile LONG g_views, g_uavs, g_pipelines;
+static volatile LONG g_views, g_uavs, g_pipelines, g_wrapped;
 static struct { void **vtbl; unsigned int index; void *orig; } g_hooks[32];
 static unsigned int g_hook_count;
+static struct { void **orig; void **copy; } g_vtbl_copies[8];
+static unsigned int g_vtbl_copy_count;
+static HRESULT (WINAPI *g_driver_create)(IUnknown *, D3D_FEATURE_LEVEL, REFIID, void **);
 
 static void log_msg(const char *fmt, ...)
 {
@@ -214,9 +218,13 @@ static BOOL CALLBACK init_once(INIT_ONCE *once, void *param, void **context)
     return TRUE;
 }
 
+static BOOL CALLBACK patch_once(INIT_ONCE *once, void *param, void **context);
+
 static void ensure_init(void)
 {
     InitOnceExecuteOnce(&g_init, init_once, NULL, NULL);
+    if (g_active)
+        InitOnceExecuteOnce(&g_patch, patch_once, NULL, NULL);
 }
 
 /* ---------------------------------------------------------------- vtable hooks */
@@ -417,6 +425,88 @@ static void hook_device(IUnknown *device)
     }
 }
 
+/* Points `device` at a writable copy of its vtable (one copy per original vtable, shared by
+ * every device that had it). Needed when the driver keeps its vtables where they can't be
+ * patched in place: GameHub's D3DMetal keeps them in its native macOS library, outside the
+ * memory Wine manages, so VirtualProtect fails on them. */
+static BOOL use_vtable_copy(IUnknown *device)
+{
+    void **vtbl = *(void ***)device, **copy = NULL;
+    unsigned int i;
+
+    AcquireSRWLockExclusive(&g_lock);
+    for (i = 0; i < g_vtbl_copy_count; i++)
+        if (g_vtbl_copies[i].orig == vtbl || g_vtbl_copies[i].copy == vtbl)
+            copy = g_vtbl_copies[i].copy;
+    if (!copy && g_vtbl_copy_count < ARRAYSIZE(g_vtbl_copies)
+            && (copy = VirtualAlloc(NULL, VTBL_SLOTS * sizeof(void *), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)))
+    {
+        memcpy(copy, vtbl, VTBL_SLOTS * sizeof(void *));
+        g_vtbl_copies[g_vtbl_copy_count].orig = vtbl;
+        g_vtbl_copies[g_vtbl_copy_count].copy = copy;
+        g_vtbl_copy_count++;
+    }
+    if (copy)
+        *(void ***)device = copy;
+    ReleaseSRWLockExclusive(&g_lock);
+    return copy != NULL;
+}
+
+/* Hooks `device`, in place when its vtable can be patched, otherwise through a copy. */
+static void fix_device(IUnknown *device)
+{
+    hook_device(device);
+    if (orig_fn(device, DEV_IDX(CreateShaderResourceView)))
+        return;
+    if (use_vtable_copy(device))
+    {
+        hook_device(device);
+        if (InterlockedIncrement(&g_wrapped) <= 4)
+            log_msg("Device %p hooked through a copy of its vtable", (void *)device);
+    }
+    if (!orig_fn(device, DEV_IDX(CreateShaderResourceView)))
+        log_msg("ERROR: couldn't hook device %p", (void *)device);
+}
+
+static HRESULT WINAPI hk_driver_create(IUnknown *adapter, D3D_FEATURE_LEVEL level, REFIID riid, void **device)
+{
+    HRESULT hr = g_driver_create(adapter, level, riid, device);
+
+    if (SUCCEEDED(hr) && device && *device)
+        fix_device(*device);
+    return hr;
+}
+
+/* Wrappers such as NVIDIA Streamline (sl.interposer.dll, which the game creates its device
+ * through when it sees an NVIDIA GPU, as under GameHub) load the system d3d12.dll themselves,
+ * so the game's device never passes through D3D12CreateDevice below. D3DMetal's
+ * D3D12CreateDevice is a jump through a pointer table in its PE data (mov rax, [rip+x];
+ * jmp rax); redirecting that pointer catches every device, whoever creates it. */
+static BOOL CALLBACK patch_once(INIT_ONCE *once, void *param, void **context)
+{
+    BYTE *code = g_real ? (BYTE *)GetProcAddress(g_real, "D3D12CreateDevice") : NULL;
+    static const BYTE load[] = {0x48, 0x8b, 0x05}, jump[] = {0x48, 0xff, 0xe0};
+    void **slot;
+    DWORD old;
+
+    if (!code || memcmp(code, load, 3) || memcmp(code + 7, jump, 3))
+    {
+        log_msg("The driver's D3D12CreateDevice isn't a dispatch jump: hooking only devices made through this DLL");
+        return TRUE;
+    }
+    slot = (void **)(code + 7 + *(INT32 *)(code + 3));
+    if (!*slot || !VirtualProtect(slot, sizeof(void *), PAGE_READWRITE, &old))
+    {
+        log_msg("ERROR: couldn't redirect the driver's D3D12CreateDevice (error %lu)", GetLastError());
+        return TRUE;
+    }
+    g_driver_create = *slot;
+    *slot = (void *)hk_driver_create;
+    VirtualProtect(slot, sizeof(void *), old, &old);
+    log_msg("Redirected the driver's D3D12CreateDevice");
+    return TRUE;
+}
+
 /* ------------------------------------------------------------------ exports */
 
 #define REAL(name, type) ((type)(g_real ? (void *)GetProcAddress(g_real, #name) : NULL))
@@ -431,7 +521,7 @@ HRESULT WINAPI fix_D3D12CreateDevice(IUnknown *adapter, D3D_FEATURE_LEVEL level,
         return E_FAIL;
     hr = real(adapter, level, riid, device);
     if (SUCCEEDED(hr) && g_active && device && *device)
-        hook_device(*device);
+        fix_device(*device);
     return hr;
 }
 
