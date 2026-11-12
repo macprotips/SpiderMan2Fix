@@ -1,6 +1,6 @@
 LIBRARY mock_d3d12.dll
 EXPORTS
-    D3D12CreateDevice = mock_D3D12CreateDevice
+    D3D12CreateDevice = mock_dispatch_D3D12CreateDevice
     mock_get_counts
     mock_get_queue_counts
     mock_get_sampler_info

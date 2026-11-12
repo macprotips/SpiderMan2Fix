@@ -500,3 +500,9 @@ HRESULT WINAPI mock_D3D12CreateDevice(IUnknown *adapter, D3D_FEATURE_LEVEL level
         *out = &g_device;
     return S_OK;
 }
+
+/* Exported as D3D12CreateDevice, shaped like D3DMetal's: a jump through a pointer table
+ * (mov rax, [rip+x]; jmp rax), which the fix redirects to catch every device. */
+void *mock_dispatch_table[1] = {(void *)mock_D3D12CreateDevice};
+__asm__(".text\n.globl mock_dispatch_D3D12CreateDevice\nmock_dispatch_D3D12CreateDevice:\n"
+        "    movq mock_dispatch_table(%rip), %rax\n    .byte 0x48, 0xff, 0xe0\n");  /* rex.w jmp *%rax, as D3DMetal encodes it */

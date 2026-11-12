@@ -46,7 +46,7 @@ static int thread_count(void)
 int main(int argc, char **argv)
 {
     const char *mode = argc > 1 ? argv[1] : "match";
-    int active = !strcmp(mode, "match");
+    int active = !strcmp(mode, "match") || !strcmp(mode, "streamline");
     const IMAGE_DOS_HEADER *dos = (const void *)GetModuleHandleW(NULL);
     const IMAGE_NT_HEADERS64 *nt = (const void *)((const BYTE *)dos + dos->e_lfanew);
     HRESULT (WINAPI *create)(IUnknown *, D3D_FEATURE_LEVEL, REFIID, void **);
@@ -88,6 +88,17 @@ int main(int argc, char **argv)
     fix = LoadLibraryA("d3d12.dll");
     CHECK(fix && fix != mock);
     create = (void *)GetProcAddress(fix, "D3D12CreateDevice");
+    if (!strcmp(mode, "streamline"))
+    {
+        /* like NVIDIA Streamline: touch the fix's exports, but create the device from the real driver */
+        HRESULT (WINAPI *debug)(REFIID, void **) = (void *)GetProcAddress(fix, "D3D12GetDebugInterface");
+        void *unused = NULL;
+
+        CHECK(debug != NULL);
+        if (debug)
+            debug(&IID_ID3D12Device, &unused);
+        create = (void *)GetProcAddress(mock, "D3D12CreateDevice");
+    }
     last_cs = (void *)GetProcAddress(mock, "mock_get_last_cs_hash");
     last_srv = (void *)GetProcAddress(mock, "mock_get_last_srv");
     last_uav = (void *)GetProcAddress(mock, "mock_get_last_uav");

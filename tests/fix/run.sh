@@ -21,6 +21,10 @@ expect_log "Replaced shader .*: ok" match
 expect_log "Wide typed view (536346624 elements) created as a raw view" match
 expect_log "Wide typed UAV (536346624 elements) created as a raw view" match
 expect_log "Exit: 2 shaders replaced, 1 wide views and 1 wide UAVs made raw" match
+wine fix_game.exe streamline || status=1
+expect_log "Redirected the driver's D3D12CreateDevice" streamline
+expect_log "Wide typed view (536346624 elements) created as a raw view" streamline
+expect_log "Exit: 2 shaders replaced, 1 wide views and 1 wide UAVs made raw" streamline
 wine fix_game.exe other-build || status=1
 expect_log "the game was updated" other-build
 wine fix_game.exe missing-shader || status=1
