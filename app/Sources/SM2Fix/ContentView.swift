@@ -199,7 +199,7 @@ struct GameCard: View {
         CardRow(label: "Bottle") {
             if model.bottles.isEmpty {
                 HStack(spacing: 6) {
-                    Text("No CrossOver bottles found")
+                    Text("No CrossOver bottles or GameHub containers found")
                         .foregroundStyle(.secondary)
                     refreshButton
                 }

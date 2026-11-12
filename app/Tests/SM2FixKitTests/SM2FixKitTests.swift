@@ -153,6 +153,36 @@ final class GameFinderTests: XCTestCase {
         XCTAssertEqual(Set(found.map(\.folder.canonicalPath)), [external.canonicalPath, inside.canonicalPath])
         XCTAssertTrue(found.allSatisfy { $0.bottle?.name == "Steam" })
     }
+
+    /// GameHub keeps games in its own library (~/GameHub by default) and links each one into
+    /// the Steam of the container that runs it.
+    func testFindsAGameHubGameAndItsContainer() throws {
+        let mac = try FakeMac()
+        try mac.bottle("Steam")
+        let base = "Library/Application Support/com.gamemac.www/wine-engine/containers/virtual_containers"
+        try mac.bottle("2", base: base)
+        let container = try mac.bottle("3", base: base)
+        let game = try mac.game(in: mac.home.appendingPathComponent("GameHub"))
+        let common = container.appendingPathComponent("drive_c/Program Files (x86)/Steam/steamapps/common")
+        try mac.fm.createDirectory(at: common, withIntermediateDirectories: true)
+        try mac.fm.createSymbolicLink(at: common.appendingPathComponent(GameFinder.folderName), withDestinationURL: game)
+
+        let bottles = Bottles.all(in: mac.env)
+        XCTAssertEqual(bottles.map(\.name), ["Steam", "2", "3"])
+        XCTAssertEqual(bottles.map(\.kind), [.crossOver, .gameHub, .gameHub])
+        XCTAssertEqual(bottles[2].displayName, "GameHub container “3”")
+        XCTAssertFalse(bottles[1].linksGame(game))
+        XCTAssertTrue(bottles[2].linksGame(game))
+
+        let found = GameFinder.findAll(env: mac.env)
+        XCTAssertEqual(found.map(\.folder.path), [game.resolvingSymlinksInPath().path])
+        XCTAssertEqual(found.first?.bottle?.path.canonicalPath, container.canonicalPath)
+        XCTAssertEqual(found.first?.reason, .linkedInBottle)
+
+        let dropped = GameFinder.install(at: game, env: mac.env)
+        XCTAssertEqual(dropped.bottle?.path.canonicalPath, container.canonicalPath)
+        XCTAssertEqual(dropped.reason, .linkedInBottle)
+    }
 }
 
 final class DllOverrideTests: XCTestCase {

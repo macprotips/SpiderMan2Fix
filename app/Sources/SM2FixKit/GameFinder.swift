@@ -78,12 +78,16 @@ public enum GameFinder {
         return GameInstall(folder: folder, bottle: found.bottle, reason: found.reason, candidates: bottles)
     }
 
-    /// Every copy of the game this Mac's CrossOver bottles know about: inside a bottle's
-    /// Steam, or in a Steam library (on any drive) that a bottle's Steam lists.
+    /// Every copy of the game this Mac's bottles know about: inside a bottle's Steam (or
+    /// linked into it, as GameHub does), or in a Steam library (on any drive) that a
+    /// bottle's Steam lists.
     public static func findAll(env: SystemEnvironment) -> [GameInstall] {
         let bottles = Bottles.all(in: env)
         var folders: [URL] = []
         func add(_ folder: URL) {
+            // a game linked into a bottle's Steam is shown, and changed, where it really is
+            let isLink = (try? FileManager.default.destinationOfSymbolicLink(atPath: folder.path)) != nil
+            let folder = isLink ? folder.resolvingSymlinksInPath() : folder
             if hasExe(folder), !folders.contains(where: { $0.canonicalPath == folder.canonicalPath }) {
                 folders.append(folder)
             }
